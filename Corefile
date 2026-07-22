@@ -1,0 +1,25 @@
+https://. {
+    bind 0.0.0.0:8080
+    
+    handle /dns-query* {
+        dns {
+            forward . 8.8.8.8 1.1.1.1 9.9.9.9 {
+                policy sequential
+                health_check 10s
+                max_fails 3
+            }
+        }
+    }
+    
+    handle /health {
+        respond "OK" 200
+    }
+    
+    handle {
+        respond "DoH Server is running" 200
+    }
+    
+    errors
+    log
+    cache 300
+}
