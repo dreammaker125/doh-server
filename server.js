@@ -4,10 +4,10 @@ const https = require('https');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Simple DNS resolve function using Google DoH
-async function resolveDNS(name, type = 'A') {
+// DNS resolve function using Google DoH API
+function resolveDNS(name, type = 'A') {
     return new Promise((resolve, reject) => {
-        const url = `https://dns.google/resolve?name=${name}&type=${type}`;
+        const url = `https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`;
         
         https.get(url, (res) => {
             let data = '';
@@ -21,7 +21,7 @@ async function resolveDNS(name, type = 'A') {
                     const result = JSON.parse(data);
                     resolve(result);
                 } catch (e) {
-                    reject(e);
+                    reject(new Error('Failed to parse DNS response'));
                 }
             });
         }).on('error', (e) => {
@@ -37,14 +37,18 @@ app.get('/dns-query', async (req, res) => {
         const type = req.query.type || 'A';
 
         if (!name) {
-            return res.json({ error: 'Missing name parameter' });
+            return res.status(400).json({ 
+                Status: 2,
+                error: 'Missing name parameter. Use ?name=domain.com&type=A' 
+            });
         }
 
+        console.log(`Resolving: ${name} (${type})`);
         const result = await resolveDNS(name, type);
         res.json(result);
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('DNS Error:', error.message);
         res.status(500).json({ 
             Status: 2,
             error: 'DNS resolution failed' 
@@ -60,12 +64,13 @@ app.get('/health', (req, res) => {
 // Home page
 app.get('/', (req, res) => {
     res.send(`
-        <h1>DoH Server Running</h1>
+        <h1>🚀 DoH Server Running</h1>
         <p>Test: <a href="/dns-query?name=google.com&type=A">/dns-query?name=google.com&type=A</a></p>
         <p>Health: <a href="/health">/health</a></p>
     `);
 });
 
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`DoH Server running on port ${PORT}`);
 });
