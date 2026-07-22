@@ -1,8 +1,0 @@
-[build]
-builder = "DOCKERFILE"
-
-[deploy]
-port = 8080
-
-[service]
-healthcheckPath = "/health"
